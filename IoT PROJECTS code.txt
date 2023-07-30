@@ -1,0 +1,45 @@
+import time
+import pyfirmata
+
+# Set the port to the one your Arduino is connected to (e.g., 'COM3' on Windows or '/dev/ttyACM0' on Linux)
+arduino_port = 'COM3'
+
+# Set the threshold for moisture level below which water should be added
+moisture_threshold = 400  # Adjust this value based on your sensor and plant needs
+
+def read_moisture(pin):
+    return board.analog[pin].read()
+
+def water_plant(pump_pin, duration):
+    board.digital[pump_pin].write(1)  # Turn on the water pump
+    time.sleep(duration)  # Wait for the specified duration
+    board.digital[pump_pin].write(0)  # Turn off the water pump
+
+if __name__ == "__main__":
+    board = pyfirmata.Arduino(arduino_port)
+
+    # Give some time for the board to initialize
+    time.sleep(2)
+
+    # Set the analog pins for the moisture sensor and pump control
+    moisture_pin = 0
+    pump_pin = 13
+
+    try:
+        while True:
+            moisture_value = read_moisture(moisture_pin) * 1023
+            print(f"Moisture Level: {moisture_value}")
+
+            if moisture_value < moisture_threshold:
+                print("Moisture level is low. Watering the plant...")
+                water_plant(pump_pin, duration=5)  # Water for 5 seconds
+            else:
+                print("Moisture level is sufficient. No watering needed.")
+
+            # Wait for some time before checking the moisture level again
+            time.sleep(10)  # You can adjust this time interval based on your requirements
+
+    except KeyboardInterrupt:
+        # Turn off the pump and close the connection when the program is interrupted
+        board.digital[pump_pin].write(0)
+        board.exit()
